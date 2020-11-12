@@ -5,14 +5,16 @@ Author: Neelesh Kamkolkar
 
 Project Notes: 
 ==============
-My goal was to simply learn Python in a bit more depth. I had been using python and pandas for data science activities but I was discovering Python while I was doing deeplearning certifications. I wanted a bit more depth understand and a broader familiarity with python so I can build tools on my own and also empathize with my engineering teams( who I work with regularly ) 
+My goal was to simply learn Python in a bit more depth. I wanted to build this as project to incrementally learn various topics and go indepth in some areas. This was primarily an effort for me to just get a bit more familiar with Python in an End to End way. 
+
+Using Model View Controller design pattern with Tkinter, Object Oriented syntax, Programming sockets, and designing custom protocols are the skills I picked up through this project. Its been a fun few weekends. I am relatively new to Python and I wanted a bit more in-depth understand and a broader familiarity with python so I can build tools on my own.
 
 I built this out in multiple phases with evolving complexity of goals so I can go more in depth and learn along the way and apply the learned concepts.  
 
  Phase 1 : Build a stand alone TicTacToe Application for sinlge player (same person plays both sides) 
 =========
 
-The focus here was to simply build a client that allowed me to play the game by myself. Here I learnt about the Tkinter library. While QT library may have been a good one to learn, I was too cheap to pay for a license of QT to learn, so I chose Tkinter. 
+The focus here was to start with the user and simply build a UI client that allowed me to play the game by myself. Here, I learnt about the Tkinter library. While QT library may have been a good one to learn, I was too cheap to pay for a license of QT to learn, so I chose Tkinter. 
 
  Phase 2 : Build a simple client/server to learn how to use python to implement simple sockets 
 =========
@@ -39,7 +41,7 @@ I worked out the state machine for the game, the various client/server calls nee
 
 Phase 5: Expand backend to support similar multi-player games  (NEXT STEPS)
 ========
-Some bugs remain that need to be fixed (eg: a player can play multiple turns, workaround: for a full game a player should wait for the game board to be updated and then play their next turn) 
+Some bugs remain that need to be fixed (eg: a player can play multiple turns, workaround: for a full game a player should wait for the game board to be updated and then play their next turn).  
 
 I would like to see if I can build out the backend to support more than two players making it a generic backend that supports simple multi-player board games ( example, extend tictactoe backend to battle ship). Similar idea, but different game.
 
@@ -52,3 +54,5 @@ To run the project yourself:
 2. Update Protocol.py with your own server IP
 3. Open three python windows to downloaded location (assumes python 3.6+ preinstalled)
 4. Type 'python Server.py' to run server. Then type 'python main.py' to run each of the clients
+
+
