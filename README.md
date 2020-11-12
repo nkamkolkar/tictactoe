@@ -5,7 +5,7 @@ Author: Neelesh Kamkolkar
 
 Project Notes: 
 ==============
-My goal was to simply learn Python in a bit more depth. I had been using python and pandas for data science activities but I was discovering Python while I was doing deeplearning certifications. I wanted a bit more depth understand and a broader familiarity with python so I can build tools on my own and also empathize with my engineering teams( who I work with regularly ) 
+My goal was to simply learn Python in a bit more depth. This was primarily an effort for me to just get a bit more familiar with Python in an End to End way. Using Model View Controller design pattern with Tkinter, Object Oriented syntax, Programming sockets, and designing custom protocols are the skills I picked up through this project. Its been a fun few weekends. I am relatively new to Python and I wanted a bit more in-depth understand and a broader familiarity with python so I can build tools on my own.
 
 I built this out in multiple phases with evolving complexity of goals so I can go more in depth and learn along the way and apply the learned concepts.  
 
@@ -52,3 +52,5 @@ To run the project yourself:
 2. Update Protocol.py with your own server IP
 3. Open three python windows to downloaded location (assumes python 3.6+ preinstalled)
 4. Type 'python Server.py' to run server. Then type 'python main.py' to run each of the clients
+
+
