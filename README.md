@@ -47,12 +47,11 @@ I would like to see if I can build out the backend to support more than two play
 
 This was primarily an effort for me to just get a bit more familiar with Python in an End to End way. Using Model View Controller design pattern with Tkinter, Object Oriented syntax, Programming sockets, and designing custom protocols are the skills I picked up through this project. Its been a fun few weekends, but time well spent. 
 
-Run the project:
+To Run the project:
 ================
 To run the project yourself: 
 1. Download all the files in a folder. 
-2. Update Protocol.py with your own server IP
+2. Update Protocol.py with your own server IP and update port as appropriate
 3. Open three python windows to downloaded location (assumes python 3.6+ preinstalled)
-4. Type 'python Server.py' to run server. Then type 'python main.py' to run each of the clients
-
-
+4. Type 'python Server.py' to run server.
+5. Then type 'python main.py' in each of the other two terminals to run each of the clients. Each client is one player
