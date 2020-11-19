@@ -11,7 +11,21 @@ import Player as plyr
 from Config import Protocol 
 import socketserver 
 import Util
+import threading
+import time
 
+DEBUG = 1 #debug flag
+def pdebug(msg):
+	if(DEBUG):
+		print("DEBUG:" + msg)
+
+"""
+Global variables
+"""
+clientCount = 0  # global reference count for clients
+CLIENTS = [] 	 # global list of client sockets
+shared_message = {'SERVER_BROADCAST' : 'Message'}  #shared message buffer
+threadLock = threading.Lock()
 
 ########################################################################
 # Class : ModelChangeEvent - shared across client server to update
@@ -48,6 +62,7 @@ class ModelChangeEvent:
 #         Overrides handle() to (1) process request and (2) send results
 #         back to client. Uses json serialization/deserialization for 
 #		  command and data to be transported over TCP sockets
+#         A single instance of this class is created per client connection
 #
 ########################################################################
 class ServerRequestHandler(socketserver.BaseRequestHandler):
@@ -55,46 +70,53 @@ class ServerRequestHandler(socketserver.BaseRequestHandler):
 
 	def handle(self):
 		#print(f"ServerRequestHandler: handle()")
-		client_data = self.request.recv(4096).strip()  
-		status = "ERROR"
-		if(client_data):
-			#there is data 
-			#print(f"client_data: {client_data}")
-			client_data_decoded = Util.msg_from_bytes(client_data)
-			#print(f"converted dict: {client_data_decoded}. client_data_decoded.type: {type(client_data_decoded)}")
-			if(client_data_decoded is not None):
-				status = self.server.process_server_commands(client_data_decoded['COMMAND'], client_data_decoded)
-		
 
-		#Send result of command processing
-		#response to client in format dict
-		#{COMMAND:<RESULT>}
-		#COMMAND is from Config.py and <RESULT> is an object custom to the command
-		#Client proxy Client.py should parse this correctly.
-		msg = {client_data_decoded['COMMAND']:status}
-		if(status is not None and isinstance(status, plyr.Player) and len(status.get_name()) > 0):
-			#print(f"server..check for winner result")
-			msg = {client_data_decoded['COMMAND']:status.to_string()} #get winning player details (dict of player information)
-		elif(status is not None and isinstance(status, pd.DataFrame)):
-			#print(f"****SERVER:************* got a dataframe")
-			msg = {client_data_decoded['COMMAND']:status.to_dict()}
-			#update model returns the data frame
-			#print(msg)
-		elif(status is not None and isinstance(status, ModelChangeEvent)):
-			#print(f"****SERVER:************* got a model change event")
-			#get_model returns model change event
-			msg = {client_data_decoded['COMMAND']:status.to_string()}
-		elif(status is not None and isinstance(status, str)): 
-			#check for ready return string
-			#print(f"other status : {status}")
-			msg = {client_data_decoded['COMMAND']:status}
+		while True:
+			try:
+				client_data = self.request.recv(4096).strip()  
+				status = "ERROR"
+				if(client_data):
+					#there is data 
+					#print(f"client_data: {client_data}")
+					client_data_decoded = Util.msg_from_bytes(client_data)
+					#print(f"converted dict: {client_data_decoded}. client_data_decoded.type: {type(client_data_decoded)}")
+					if(client_data_decoded is not None):
+						status = self.server.process_server_commands(client_data_decoded['COMMAND'], client_data_decoded)
+				
+
+					#Send result of command processing
+					#response to client in format dict
+					#{COMMAND:<RESULT>}
+					#COMMAND is from Config.py and <RESULT> is an object custom to the command
+					#Client proxy Client.py should parse this correctly.
+					msg = {client_data_decoded['COMMAND']:status}
+					if(status is not None and isinstance(status, plyr.Player) and len(status.get_name()) > 0):
+						#print(f"server..check for winner result")
+						msg = {client_data_decoded['COMMAND']:status.to_string()} #get winning player details (dict of player information)
+					elif(status is not None and isinstance(status, pd.DataFrame)):
+						#print(f"****SERVER:************* got a dataframe")
+						msg = {client_data_decoded['COMMAND']:status.to_dict()}
+						#update model returns the data frame
+						#print(msg)
+					elif(status is not None and isinstance(status, ModelChangeEvent)):
+						#print(f"****SERVER:************* got a model change event")
+						#get_model returns model change event
+						msg = {client_data_decoded['COMMAND']:status.to_string()}
+					elif(status is not None and isinstance(status, str)): 
+						#check for ready return string
+						#print(f"status : {status}")
+						msg = {client_data_decoded['COMMAND']:status}
 
 
-		#result_for_client = json.dumps(msg).encode('utf-8')	
-		result_for_client = Util.msg_to_bytes(msg)
-		#print(f"Sending server results {result_for_client}")
-		self.request.sendall(result_for_client)
-		#self.request.sendto(result_for_client, ('<broadcast>', 12345))
+					#result_for_client = json.dumps(msg).encode('utf-8')	
+					result_for_client = Util.msg_to_bytes(msg)
+					#print(f"Sending server results {result_for_client}")
+					self.request.sendall(result_for_client)
+					#self.request.sendto(result_for_client, ('<broadcast>', 12345))
+			except Exception as e:
+				#print(e)
+				pass
+			
 
 
 
@@ -104,9 +126,8 @@ class ServerRequestHandler(socketserver.BaseRequestHandler):
 #         back to client
 #
 ########################################################################
-class Server(socketserver.TCPServer):
+class Server(socketserver.ThreadingMixIn, socketserver.TCPServer):
 
-	client_count = 0
 	
 	def __init__(self):
 		super().__init__((Protocol.SERVER_IP, Protocol.SERVER_PORT), ServerRequestHandler)
@@ -130,6 +151,43 @@ class Server(socketserver.TCPServer):
 	def start(self):
 		self.serve_forever()
 
+	#Over ride get_request so we can track the client sockets
+	#There were no examples on internet showing this for doing
+	#Broadcasts across multiple clients using TCP
+	def get_request(self):
+		pdebug("get_request")
+		try:
+			client, addr = self.socket.accept()
+			global clientCount # global reference count for clients
+			global CLIENTS     # global list of client sockets
+			clientCount += 1 
+			pdebug("clientCount " + str(clientCount))
+			if(client not in CLIENTS):
+				CLIENTS.append((client,addr))
+				print(f"Added new client from: {client}")
+		except socket.error as msg: 
+			msg = "GameServer.get_request: " + msg
+			pdebug(msg)
+
+		return(client, addr)
+
+	def broadcast(self, a_dict):
+		global clientCount
+		global CLIENTS
+		for client, address in CLIENTS: 
+			try:
+				#append the client address to the broad cast message 
+				#client can verify with it's own copy or ignore
+				a_dict['client_address'] = address
+				msg = json.dumps(a_dict).encode('utf-8')
+				client.sendall(msg)
+			except Exception as e:
+				#This client died or closed connection, remove the client socket from list
+				#and decrement reference count
+				CLIENTS.remove((client, address))
+				client.close()
+				clientCount -= 1 
+				pass
 
 	#Message processor 
 	#protocol for client server communication and command parsing 
@@ -356,8 +414,31 @@ class Server(socketserver.TCPServer):
 		print(f"server.py checkForWin() : {p.to_string()}")
 		return p
 
-#Start a server
-gs = Server()
-gs.start()
+
+if __name__ == "__main__":
+
+	#create a threaded TCP server with a request handler which is instantiated for each client
+	server = Server()
+	ip, port = server.server_address
+
+	# Start a thread with the server -- that thread will then start one
+    # more thread for each request
+	server_thread = threading.Thread(target=server.serve_forever)
+    # Exit the server thread when the main thread terminates
+	server_thread.setDaemon(True)
+	server_thread.start()
+	print("Server main loop running in thread:", server_thread.getName())
+
+	#Server simply broadcasts the shared buffer to all clients. 
+	#TODO: Brodcast only when there is something new
+	while True:
+		print(f"Clients:\n {CLIENTS}\n******")
+		#BUG : There is a bug that when broadcasting the socket 
+		# resets. This works in prototype at https://github.com/nkamkolkar/multithreaded-client-server
+		# Needs investigations as to why this is breaking
+		#server.broadcast(shared_message)
+		time.sleep(5)
+
+	server.shutdown()
 
 
