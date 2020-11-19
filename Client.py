@@ -47,6 +47,8 @@ class GameNetworkClient:
 			self.server_host = Protocol.SERVER_IP # connect to this server
 			self.port = Protocol.SERVER_PORT 	  # on this port
 			self.client_id = np.floor(np.random.rand()*10000) #Unique ID for client
+			self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.client_socket.connect((self.server_host, self.port))
 
 
 	#write server model state with X/O and the corresponding row/column where 
@@ -140,15 +142,17 @@ class GameNetworkClient:
 	#check if two players are registered. 
 	def check_for_ready(self):
 		#print("client.py.check_for_ready: start")
+		status = "None"
 		server_command = {'COMMAND' : Protocol.COMMAND_CHECK_FOR_READY, 'client_id' : self.client_id}
 		res = self.proxy_server_call(server_command)			
 		#print(f"client.py: check_for_ready: {res}")
 		#convert bytes to boolean
 		#res = self.msg_from_bytes(res)
-		res = Util.msg_from_bytes(res)
-		#print(f"client.py: check_for_ready: CONVERTED FROM BYTES {res}  : {type(res)}")
-		status = res.get(str(Protocol.COMMAND_CHECK_FOR_READY)) #json converts to int. use str
-		#print(status)
+		if(res is not None and res != b''):
+			res = Util.msg_from_bytes(res)
+			#print(f"client.py: check_for_ready: CONVERTED FROM BYTES {res}  : {type(res)}")
+			status = res.get(str(Protocol.COMMAND_CHECK_FOR_READY)) #json converts to int. use str
+			#print(status)
 		return (status)
 
 
@@ -159,8 +163,8 @@ class GameNetworkClient:
 		status = None
 		#print("Client.py: proxy_server_call()...entering")
 		try: 
-			self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.client_socket.connect((self.server_host, self.port))
+			#self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			#self.client_socket.connect((self.server_host, self.port))
 			#data_dict_encoded = json.dumps(data_dict).encode('utf-8')
 			data_dict_encoded = Util.msg_to_bytes(data_dict)
 			#print(f"proxy_server_call.data_dict_encoded: {data_dict_encoded}")
@@ -169,9 +173,10 @@ class GameNetworkClient:
 
 			try:
 				status = self.client_socket.recv(4096)
-			except: #TODO : Manage exceptions 
-				pass  
-				#print(f"Client.py: trying to read from server errored: {status}")
+			except Exception as e: #TODO : Manage exceptions 
+				#print(f"Client.py: trying to read from server errored: {status}")	
+				raise e
+				
 		
 			if(status is not None):
 				##print("Client.py: status call return : {status}")
@@ -184,7 +189,8 @@ class GameNetworkClient:
 
 		except:
 			#print(f"exception network error: client id: {self.client_id} socket : {self.client_socket}")
-			self.client_socket.close()
+			#recreate connection?
+			pass
 		
 		#print("Client.py:proxy_server_call()...exiting")
 		return status 
